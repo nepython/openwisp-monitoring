@@ -13,22 +13,31 @@ addons:
 python:
   - "3.6"
 
+env:
+  - INFLUXDB_VER=1.7.4
+
 branches:
   only:
-    - master
+    - test-travis
 
 before_install:
+  - sudo apt-get install fping
+  - sudo apt-get install redis-server
   - pip install -U pip wheel setuptools
   - pip install --no-cache-dir -U -r requirements-test.txt
   - ./runflake8
   - ./runisort
 
 install:
-  - python setup.py -q develop
+  # - pip install cryptography==2.8
+  - pip install attrs==19.3.0
+  - pip install -U -e ../openwisp-monitoring 
+  - pip install coverage
+  # - python setup.py -q develop
 
 script:
   - coverage run --source=openwisp_monitoring runtests.py
-  ./tests/manage.py makemigrations monitoring device check --dry-run | grep "No changes detected";
+  # - ./tests/manage.py makemigrations monitoring device check --dry-run | grep "No changes detected";
 
 after_success:
   coveralls
