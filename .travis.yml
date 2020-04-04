@@ -1,3 +1,7 @@
+os: linux
+sudo: false
+dist: bionic
+
 language: python
 cache: pip
 
@@ -5,39 +9,51 @@ addons:
   apt:
     packages:
       - sqlite3
+      - fping
       - gdal-bin
       - libproj-dev
       - libgeos-dev
       - libspatialite-dev
+      - spatialite-bin
+      - libsqlite3-mod-spatialite
 
 python:
   - "3.6"
 
+services:
+  - docker
+  - redis-server
+
 env:
-  - INFLUXDB_VER=1.7.4
+- INFLUXDB_VER=1.7.10
+- DJANGO="django>=2.2,<2.3"
+- DJANGO="django>=3.0,<3.1"
 
 branches:
   only:
     - test-travis
 
 before_install:
-  - sudo apt-get install fping
-  - sudo apt-get install redis-server
+  - docker run -d --name influxdb -p 8086:8086 influxdb
+  - docker exec -it influxdb influx -execute 'CREATE DATABASE openwisp2'
   - pip install -U pip wheel setuptools
   - pip install --no-cache-dir -U -r requirements-test.txt
-  - ./runflake8
-  - ./runisort
 
 install:
-  # - pip install cryptography==2.8
-  - pip install attrs==19.3.0
-  - pip install -U -e ../openwisp-monitoring 
+  - pip install $DJANGO
+  - pip install -e .
   - pip install coverage
-  # - python setup.py -q develop
 
 script:
+  - |
+    openwisp-utils-qa-checks \
+        --migration-path \
+        "./openwisp_monitoring/check/migrations \
+        ./openwisp_monitoring/device/migrations \
+        ./openwisp_monitoring/monitoring/migrations \
+        ./openwisp_monitoring/notifications/migrations" \
+        --migration-module "check device_monitoring monitoring notifications"
   - coverage run --source=openwisp_monitoring runtests.py
-  # - ./tests/manage.py makemigrations monitoring device check --dry-run | grep "No changes detected";
 
 after_success:
   coveralls
