@@ -26,7 +26,7 @@ from swapper import load_model
 from openwisp_utils.base import TimeStampedEditableModel
 
 from .signals import threshold_crossed
-from .utils import query, write, write_points
+from .utils import query, write
 
 User = get_user_model()
 logger = logging.getLogger(__name__)
@@ -155,24 +155,6 @@ class Metric(TimeStampedEditableModel):
         if not check:
             return
         self.check_threshold(value, time)
-
-    def write_points(self, value, time=None, database=None, check=True, extra_values=None):
-        """ Writes multiple points to timeseries database """
-        values = {}
-        for val in value:
-            values.append = {self.field_name: val}
-        if extra_values and isinstance(extra_values, dict):
-            values.update(extra_values)
-        write_points(name=self.key,
-                     values=values,
-                     tags=self.tags,
-                     timestamp=time,
-                     database=database)
-        # check can be disabled,
-        # mostly for automated testing and debugging purposes
-        if not check:
-            return
-        self.check_threshold(values, time)
 
     def read(self, since=None, limit=1, order=None, extra_fields=None):
         """ reads timeseries data """

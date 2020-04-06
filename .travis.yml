@@ -25,7 +25,6 @@ services:
   - redis-server
 
 env:
-- INFLUXDB_VER=1.7.10
 - DJANGO="django>=2.2,<2.3"
 - DJANGO="django>=3.0,<3.1"
 
@@ -49,9 +48,9 @@ script:
     openwisp-utils-qa-checks \
         --migration-path \
         "./openwisp_monitoring/check/migrations \
-        ./openwisp_monitoring/device/migrations \
-        ./openwisp_monitoring/monitoring/migrations \
-        ./openwisp_monitoring/notifications/migrations" \
+         ./openwisp_monitoring/device/migrations \
+         ./openwisp_monitoring/monitoring/migrations \
+         ./openwisp_monitoring/notifications/migrations" \
         --migration-module "check device_monitoring monitoring notifications"
   - coverage run --source=openwisp_monitoring runtests.py
 

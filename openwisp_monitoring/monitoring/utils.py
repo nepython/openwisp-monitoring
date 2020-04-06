@@ -50,26 +50,6 @@ def write(name, values, tags=None, timestamp=None,
         raise e
 
 
-def write_points(name, values, tags=None, timestamp=None,
-                 database=None, retention_policy=None):
-    """ Method to be called via threading module. """
-    point = {
-        'measurement': name,
-        'tags': tags,
-        'fields': values
-    }
-    if isinstance(timestamp, datetime):
-        timestamp = timestamp.strftime('%Y-%m-%dT%H:%M:%SZ')
-    if timestamp:
-        point['time'] = timestamp
-    try:
-        get_db().write_points({'points': [point]},
-                              {'db': database or settings.INFLUXDB_DATABASE,
-                               'rp': retention_policy})
-    except Exception as e:
-        raise e
-
-
 def create_database():
     """ creates database if necessary """
     db = get_db()
