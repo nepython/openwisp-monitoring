@@ -227,6 +227,10 @@ class TestGraphs(TestMonitoringMixin, TestCase):
         for n in range(0, 9):
             m.write('00:16:3e:00:00:00', time=now() - timedelta(days=n))
             m.write('00:23:4b:00:00:00', time=now() - timedelta(days=n, seconds=1))
+        m.write('00:16:3e:00:00:00', time=now() - timedelta(days=2))
+        m.write('00:16:3e:00:00:00', time=now() - timedelta(days=4))
+        m.write('00:23:4a:00:00:00')
+        m.write('00:14:5c:00:00:00')
         q = "SELECT COUNT(DISTINCT({field_name})) AS {field_name} FROM {key} " \
             "WHERE time >= '{time}' AND content_type = '{content_type}' " \
             "AND object_id = '{object_id}' GROUP BY time(24h)"
@@ -235,7 +239,7 @@ class TestGraphs(TestMonitoringMixin, TestCase):
         data = g.read(time='30d')
         self.assertEqual(data['traces'][0][0], m.field_name)
         # last 10 days
-        self.assertEqual(data['traces'][0][1][-10:], [0, 2, 2, 2, 2, 2, 2, 2, 2, 2])
+        self.assertEqual(data['traces'][0][1][-10:], [0, 2, 2, 2, 2, 2, 2, 2, 2, 4])
 
     def test_get_query_1d(self):
         g = self._create_graph(test_data=None)
