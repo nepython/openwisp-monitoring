@@ -25,7 +25,7 @@ from swapper import load_model
 
 from openwisp_utils.base import TimeStampedEditableModel
 
-from .signals import threshold_crossed
+from .signals import post_metric_write, pre_metric_write, threshold_crossed
 from .utils import query, write
 
 User = get_user_model()
@@ -43,7 +43,8 @@ class Metric(TimeStampedEditableModel):
                                      null=True, blank=True)
     object_id = models.CharField(max_length=36, db_index=True, blank=True)
     content_object = GenericForeignKey('content_type', 'object_id')
-    is_healthy = models.BooleanField(default=True, db_index=True)
+    # NULL means the health has yet to be assessed
+    is_healthy = models.BooleanField(default=None, null=True, blank=True, db_index=True)
 
     class Meta:
         unique_together = ('key', 'field_name', 'content_type', 'object_id')
@@ -121,15 +122,15 @@ class Metric(TimeStampedEditableModel):
         crossed = threshold._is_crossed_by(value, time)
         # situation has not changed
         if (not crossed and self.is_healthy) or \
-           (crossed and not self.is_healthy):
+           (crossed and self.is_healthy is False):
             return
         # problem: not within threshold limit
-        elif crossed and self.is_healthy:
+        elif crossed and self.is_healthy in [True, None]:
             self.is_healthy = False
             level = 'warning'
             verb = 'crossed threshold limit'
         # ok: returned within threshold limit
-        elif not crossed and not self.is_healthy:
+        elif not crossed and self.is_healthy in [False, None]:
             self.is_healthy = True
             level = 'info'
             verb = 'returned within threshold limit'
@@ -145,11 +146,16 @@ class Metric(TimeStampedEditableModel):
         values = {self.field_name: value}
         if extra_values and isinstance(extra_values, dict):
             values.update(extra_values)
+        signal_kwargs = dict(sender=self.__class__,
+                             metric=self,
+                             values=values)
+        pre_metric_write.send(**signal_kwargs)
         write(name=self.key,
               values=values,
               tags=self.tags,
               timestamp=time,
               database=database)
+        post_metric_write.send(**signal_kwargs)
         # check can be disabled,
         # mostly for automated testing and debugging purposes
         if not check:
