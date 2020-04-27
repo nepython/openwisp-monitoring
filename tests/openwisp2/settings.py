@@ -199,3 +199,8 @@ try:
     from openwisp2.local_settings import *
 except ImportError:
     pass
+
+if TESTING:
+    PASSWORD_HASHERS = [
+        'django.contrib.auth.hashers.MD5PasswordHasher',
+    ]
