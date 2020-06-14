@@ -62,8 +62,9 @@ class DeviceMonitoringTestCase(TestDeviceMonitoringMixin, TestCase):
             m = Metric.objects.get(key=ifname, field_name='clients', object_id=d.pk)
             points = m.read(limit=10, order='time DESC')
             self.assertEqual(len(points), len(iface['wireless']['clients']))
+        return dd
 
-    def _create_multiple_measurements(self, create=True):
+    def _create_multiple_measurements(self, create=True, double=False):
         if create:
             self.create_test_adata()
         self.assertEqual(self.device_model.objects.count(), 1)
@@ -74,6 +75,8 @@ class DeviceMonitoringTestCase(TestDeviceMonitoringMixin, TestCase):
         data2['interfaces'][1]['statistics']['rx_bytes'] = 2000000000
         data2['interfaces'][1]['statistics']['tx_bytes'] = 1000000000
         r = self._post_data(d.id, d.key, data2)
+        if double:
+            return
         data3 = self._data()
         data3['interfaces'][0]['statistics']['rx_bytes'] = 500000000
         data3['interfaces'][0]['statistics']['tx_bytes'] = 300000000

@@ -20,7 +20,7 @@ class TestAdmin(DeviceMonitoringTestCase):
         self.client.force_login(u)
 
     def test_device_admin(self):
-        dd = self._create_multiple_measurements()
+        dd = self.create_test_adata()
         url = reverse('admin:config_device_change', args=[dd.pk])
         self._login_admin()
         r = self.client.get(url)
@@ -61,7 +61,7 @@ class TestAdmin(DeviceMonitoringTestCase):
         self.assertContains(r1, '00:ee:ad:34:f5:3b')
 
     def test_uuid_bug(self):
-        dd = self._create_multiple_measurements()
+        dd = self.create_test_adata()
         uuid = str(dd.pk).replace('-', '')
         url = reverse('admin:config_device_change', args=[uuid])
         self._login_admin()
