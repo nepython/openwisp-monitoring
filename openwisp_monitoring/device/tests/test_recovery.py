@@ -35,6 +35,8 @@ class TestRecovery(DeviceMonitoringTestCase):
         d.management_ip = '10.40.0.5'
         d.save()
         data = self._data()
+        del data['resources']
+        del data['interfaces']
         auto_create_ping.delay(
             model='device', app_label='config', object_id=str(d.pk), created=True,
         )

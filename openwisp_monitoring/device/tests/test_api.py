@@ -59,7 +59,7 @@ class TestDeviceApi(DeviceMonitoringTestCase):
         self.assertEqual(Chart.objects.count(), 0)
 
     def test_200_create(self):
-        self.create_test_adata()
+        self.create_test_adata(no_resources=True)
 
     def test_200_traffic_counter_incremented(self):
         dd = self.create_test_adata(no_resources=True)
@@ -232,7 +232,7 @@ class TestDeviceApi(DeviceMonitoringTestCase):
         d = self._create_device(organization=o)
         m = self._create_object_metric(content_object=d, name='applications')
         self._create_chart(metric=m, configuration='histogram')
-        self._create_multiple_measurements(create=False)
+        self._create_multiple_measurements(create=False, no_resources=True, count=2)
         r = self.client.get(self._url(d.pk.hex, d.key))
         self.assertEqual(r.status_code, 200)
         self.assertTrue(len(r.data['x']) > 50)
@@ -291,7 +291,7 @@ class TestDeviceApi(DeviceMonitoringTestCase):
         )
 
     def test_get_device_metrics_400_bad_timezone(self):
-        dd = self.create_test_adata()
+        dd = self.create_test_adata(no_resources=True)
         d = self.device_model.objects.get(pk=dd.pk)
         wrong_timezone_values = (
             'wrong',
