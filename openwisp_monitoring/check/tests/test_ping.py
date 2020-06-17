@@ -46,8 +46,7 @@ class TestPing(TestDeviceMonitoringMixin, TransactionTestCase):
         for key in self._RTT_KEYS:
             self.assertTrue(result[key] < 1)
 
-    @patch.object(Ping, '_command', return_value=_FPING_OUTPUT)
-    def test_check_ping_params(self, mocked_method):
+    def test_check_ping_params(self):
         device = self._create_device(organization=self._create_org())
         # will ping localhost
         device.management_ip = '127.0.0.1'

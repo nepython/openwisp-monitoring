@@ -62,20 +62,19 @@ class TestDeviceApi(DeviceMonitoringTestCase):
         self.create_test_adata()
 
     def test_200_traffic_counter_incremented(self):
-        self.create_test_adata()
-        self.assertEqual(self.device_model.objects.count(), 1)
+        dd = self.create_test_adata(no_resources=True)
         d = self.device_model.objects.first()
         data2 = self._data()
+        del data2['resources']
         data2['interfaces'][0]['statistics']['rx_bytes'] = 983
         data2['interfaces'][0]['statistics']['tx_bytes'] = 1567
         data2['interfaces'][1]['statistics']['rx_bytes'] = 2983
         data2['interfaces'][1]['statistics']['tx_bytes'] = 4567
         r = self._post_data(d.id, d.key, data2)
         self.assertEqual(r.status_code, 200)
-        dd = DeviceData(pk=d.pk)
         self.assertDictEqual(dd.data, data2)
-        self.assertEqual(Metric.objects.count(), 9)
-        self.assertEqual(Chart.objects.count(), 7)
+        self.assertEqual(Metric.objects.count(), 6)
+        self.assertEqual(Chart.objects.count(), 4)
         if_dict = {'wlan0': data2['interfaces'][0], 'wlan1': data2['interfaces'][1]}
         for ifname in ['wlan0', 'wlan1']:
             iface = if_dict[ifname]
@@ -92,20 +91,19 @@ class TestDeviceApi(DeviceMonitoringTestCase):
             self.assertEqual(len(points), len(iface['wireless']['clients']) * 2)
 
     def test_200_traffic_counter_reset(self):
-        self.create_test_adata()
-        self.assertEqual(self.device_model.objects.count(), 1)
+        dd = self.create_test_adata(no_resources=True)
         d = self.device_model.objects.first()
         data2 = self._data()
+        del data2['resources']
         data2['interfaces'][0]['statistics']['rx_bytes'] = 50
         data2['interfaces'][0]['statistics']['tx_bytes'] = 20
         data2['interfaces'][1]['statistics']['rx_bytes'] = 80
         data2['interfaces'][1]['statistics']['tx_bytes'] = 120
         r = self._post_data(d.id, d.key, data2)
         self.assertEqual(r.status_code, 200)
-        dd = DeviceData(pk=d.pk)
         self.assertDictEqual(dd.data, data2)
-        self.assertEqual(Metric.objects.count(), 9)
-        self.assertEqual(Chart.objects.count(), 7)
+        self.assertEqual(Metric.objects.count(), 6)
+        self.assertEqual(Chart.objects.count(), 4)
         if_dict = {'wlan0': data2['interfaces'][0], 'wlan1': data2['interfaces'][1]}
         for ifname in ['wlan0', 'wlan1']:
             iface = if_dict[ifname]
@@ -122,9 +120,9 @@ class TestDeviceApi(DeviceMonitoringTestCase):
             self.assertEqual(len(points), len(iface['wireless']['clients']) * 2)
 
     def test_200_multiple_measurements(self):
-        dd = self._create_multiple_measurements()
-        self.assertEqual(Metric.objects.count(), 9)
-        self.assertEqual(Chart.objects.count(), 7)
+        dd = self._create_multiple_measurements(no_resources=True)
+        self.assertEqual(Metric.objects.count(), 6)
+        self.assertEqual(Chart.objects.count(), 4)
         expected = {
             'wlan0': {'rx_bytes': 10000, 'tx_bytes': 6000},
             'wlan1': {'rx_bytes': 4587, 'tx_bytes': 2993},
@@ -225,6 +223,9 @@ class TestDeviceApi(DeviceMonitoringTestCase):
         self.assertEqual(charts[1]['title'], 'WiFi clients: wlan1')
         self.assertEqual(charts[2]['title'], 'Traffic: wlan0')
         self.assertEqual(charts[3]['title'], 'Traffic: wlan1')
+        self.assertEqual(charts[4]['title'], 'Memory Usage')
+        self.assertEqual(charts[5]['title'], 'CPU Load')
+        self.assertEqual(charts[6]['title'], 'Disk Usage')
 
     def test_get_device_metrics_histogram_ignore_x(self):
         o = self._create_org()
@@ -260,7 +261,7 @@ class TestDeviceApi(DeviceMonitoringTestCase):
 
     def test_get_device_metrics_csv(self):
         d = self._create_device(organization=self._create_org())
-        self._create_multiple_measurements(create=False, double=True)
+        self._create_multiple_measurements(create=False, count=2)
         m = self._create_object_metric(content_object=d, name='applications')
         self._create_chart(metric=m, configuration='histogram')
         r = self.client.get('{0}&csv=1'.format(self._url(d.pk, d.key)))
@@ -322,11 +323,10 @@ class TestDeviceApi(DeviceMonitoringTestCase):
 
     def test_invalid_chart_config(self):
         # Tests if chart_config is invalid, then it is skipped and not failed
-        self.create_test_adata()
-        d = DeviceData.objects.first()
-        self.assertEqual(Chart.objects.count(), 7)
+        d = self._create_device(organization=self._create_org())
+        m = self._create_object_metric(name='test_metric', content_object=d)
+        c = self._create_chart(metric=m, test_data=None)
         with redirect_stderr(StringIO()) as stderr:
-            c = Chart.objects.first()
             c.configuration = 'invalid'
             c.save()
             r = self.client.get(self._url(d.pk.hex, d.key))
@@ -363,7 +363,7 @@ class TestDeviceApi(DeviceMonitoringTestCase):
             self.assertEqual(r.status_code, 200)
 
     def test_get_device_status_200(self):
-        dd = self.create_test_adata()
+        dd = self.create_test_adata(no_resources=True)
         d = self.device_model.objects.get(pk=dd.pk)
         url = self._url(d.pk.hex, d.key)
         # status not requested
@@ -375,4 +375,4 @@ class TestDeviceApi(DeviceMonitoringTestCase):
         self.assertEqual(r.status_code, 200)
         self.assertIn('data', r.data)
         self.assertIsInstance(r.data['data'], dict)
-        self.assertEqual(DeviceData(pk=d.pk).data, r.data['data'])
+        self.assertEqual(dd.data, r.data['data'])

@@ -47,9 +47,14 @@ class TimeLoggingTestResult(TextTestResult):
                 if module != self._module:
                     self._module = module
                     print(f'{self.color("yellow_bold")}{module}{self.color("reset")}')
-                color = self.color("red_bold") if elapsed > 1 else self.color("yellow_bold")
+                color = (
+                    self.color("red_bold") if elapsed > 1 else self.color("yellow_bold")
+                )
                 print(f'  ({color}{elapsed:.2f}s{self.color("reset")}) {name}')
-        print(f'\n{self.color("white_bold")}Total slow tests detected: {slow_tests_counter}{self.color("reset")}')
+        print(
+            f'\n{self.color("white_bold")}Total slow tests detected: '
+            f'{slow_tests_counter}{self.color("reset")}'
+        )
         return self.test_timings
 
     def stopTestRun(self):

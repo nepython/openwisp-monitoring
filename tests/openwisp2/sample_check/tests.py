@@ -1,5 +1,9 @@
+from unittest.mock import patch
+
 from django.test import TransactionTestCase
 from django.utils.timezone import now
+from openwisp_monitoring.check.classes import Ping
+from openwisp_monitoring.check.tests import _FPING_OUTPUT
 from openwisp_monitoring.check.tests.test_models import TestModels as BaseTestModels
 from openwisp_monitoring.check.tests.test_ping import TestPing as BaseTestPing
 from openwisp_monitoring.check.tests.test_utils import TestUtils as BaseTestUtils
@@ -18,15 +22,13 @@ class TestPing(BaseTestPing, TestDeviceMonitoringMixin, TransactionTestCase):
 
 
 class TestModels(BaseTestModels, TestDeviceMonitoringMixin, TransactionTestCase):
-    def test_last_called(self):
+    @patch.object(Ping, '_command', return_value=_FPING_OUTPUT)
+    def test_last_called(self, mocked_method):
         device = self._create_device(organization=self._create_org())
         # will ping localhost
         device.management_ip = '127.0.0.1'
         check = Check(
-            name='Ping check',
-            check=self._PING,
-            content_object=device,
-            params={'count': 2, 'interval': 10, 'bytes': 10, 'timeout': 50},
+            name='Ping check', check=self._PING, content_object=device, params={},
         )
         check.perform_check(store=False)
         # Avoid any failures due to minor lag
